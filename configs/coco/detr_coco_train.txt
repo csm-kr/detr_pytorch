@@ -1,0 +1,12 @@
+# name
+name = sm_detr
+
+# data
+coco_path = /home/cvmlserver9/Sungmin/data/coco/
+
+# batch size
+batch_size = 36
+
+# distributed
+rank = 0
+gpu_ids = [0, 1, 2]
