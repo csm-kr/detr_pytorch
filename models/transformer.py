@@ -13,6 +13,7 @@ from typing import Optional, List
 import torch
 import torch.nn.functional as F
 from torch import nn, Tensor
+from models.linear_multihead_attention import LinearMultiheadAttention
 
 
 class Transformer(nn.Module):
@@ -129,7 +130,9 @@ class TransformerEncoderLayer(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False):
         super().__init__()
+        # FIXME Linear DETR 134~135
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        # self.self_attn = LinearMultiheadAttention(d_model, nhead, dropout=dropout, seq_len=32*32, proj_k=64)
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(dropout)
@@ -189,8 +192,13 @@ class TransformerDecoderLayer(nn.Module):
     def __init__(self, d_model, nhead, dim_feedforward=2048, dropout=0.1,
                  activation="relu", normalize_before=False):
         super().__init__()
+
+        # FIXME Linear DETR 197 ~ 201
         self.self_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
         self.multihead_attn = nn.MultiheadAttention(d_model, nhead, dropout=dropout)
+        # self.self_attn = LinearMultiheadAttention(d_model, nhead, dropout=dropout, seq_len=100, proj_k=64)
+        # self.multihead_attn = LinearMultiheadAttention(d_model, nhead, dropout=dropout, seq_len=32 * 32, proj_k=64)
+
         # Implementation of Feedforward model
         self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.dropout = nn.Dropout(dropout)

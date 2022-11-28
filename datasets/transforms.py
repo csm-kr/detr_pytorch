@@ -274,3 +274,14 @@ class Compose(object):
             format_string += "    {0}".format(t)
         format_string += "\n)"
         return format_string
+
+
+# FIXME add resize for fixed size image
+class Resize(object):
+    def __init__(self, size):
+        assert isinstance(size, (list, tuple))
+        self.size = size
+
+    def __call__(self, img, target=None):
+        size = self.size
+        return resize(img, target, size)

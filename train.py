@@ -56,11 +56,11 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                 # loss plot
                 vis.line(X=torch.ones((1, 1)).cpu() * idx + epoch * train_loader.__len__(),  # step
                          Y=torch.Tensor([losses]).unsqueeze(0).cpu(),
-                         win='train_loss',
+                         win='train_loss_' + opts.name,
                          update='append',
                          opts=dict(xlabel='step',
                                    ylabel='Loss',
-                                   title='training loss for {}'.format(opts.name),
+                                   title='train_loss_{}'.format(opts.name),
                                    legend=['Total Loss']))
 
     if opts.rank == 0:

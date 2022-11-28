@@ -8,15 +8,15 @@ def get_args_parser():
     parser.add_argument('--name', type=str, help='config file path')
     parser.add_argument('--log_dir', type=str, default='./logs', help='config file path')
 
-
-    # vis
+    # visdom
     parser.add_argument('--visdom_port', type=int, default=8097)
     parser.add_argument('--vis_step', type=int, default=100)
+    parser.add_argument('--is_load_true', dest='is_load', action='store_true')
 
     ################ DETR #####################
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--lr_backbone', default=1e-5, type=float)
-    parser.add_argument('--batch_size', default=24, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--weight_decay', default=1e-4, type=float)
     parser.add_argument('--epochs', default=300, type=int)
     parser.add_argument('--lr_drop', default=200, type=int)

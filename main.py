@@ -27,7 +27,6 @@ def main_worker(rank, opts):
 
     # 3. ** visdom **
     vis = visdom.Visdom(port=opts.visdom_port)
-    # vis = None
 
     # 4. ** dataloader **
     dataset_train = build_coco(image_set='train', args=opts)
@@ -126,7 +125,7 @@ def main_worker(rank, opts):
             opts.start_epoch = checkpoint['epoch'] + 1
 
     if opts.eval:
-        test_and_eval(0, base_ds, device, vis, test_loader, model, criterion, postprocessors, opts=opts)
+        test_and_eval('best', base_ds, device, vis, test_loader, model, criterion, postprocessors, opts=opts)
         return
 
     for epoch in range(opts.start_epoch, opts.epochs):

@@ -15,7 +15,7 @@ def test_and_eval(epoch, base_ds, device, vis, test_loader, model, criterion, po
     model.eval()
 
     checkpoint = None
-    if is_load:
+    if opts.is_load:
         f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
         device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
         if isinstance(model, (torch.nn.parallel.distributed.DistributedDataParallel, torch.nn.DataParallel)):
