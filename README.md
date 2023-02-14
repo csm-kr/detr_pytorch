@@ -14,8 +14,8 @@ Please refer to https://arxiv.org/abs/2005.12872
 - [x] Fix the resolution of images
 
 ### To Do
-- [] Segmentation
-- [] voc experiments
+- [ ] Segmentation
+- [ ] voc experiments
 
 ### Training Setting
 ```
