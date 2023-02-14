@@ -46,8 +46,16 @@ def main_worker(rank, opts):
     model.to(device)
     criterion.to(device)
 
+    param_dicts = [
+        {"params": [p for n, p in model.named_parameters() if "backbone" not in n and p.requires_grad]},
+        {
+            "params": [p for n, p in model.named_parameters() if "backbone" in n and p.requires_grad],
+            "lr": opts.lr_backbone,
+        },
+    ]
+
     # 7. ** optimizer **
-    optimizer = torch.optim.AdamW(model.parameters(),
+    optimizer = torch.optim.AdamW(param_dicts,
                                   lr=opts.lr,
                                   weight_decay=opts.weight_decay)
 

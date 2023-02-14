@@ -5,7 +5,8 @@ from PIL import Image
 from pycocotools.coco import COCO
 from torch.utils.data import DataLoader, Dataset
 
-from utils.util import xy_to_cxcy
+# from utils.util import xy_to_cxcy
+from utils.box_ops import box_xyxy_to_cxcywh
 from utils.download_dataset import download_coco
 from datasets.mosaic_transform import load_mosaic
 
@@ -100,7 +101,7 @@ class COCO_Dataset(Dataset):
             visualize_boxes_labels(image, boxes, labels, data_type='coco', num_labels=91)
 
         if self.boxes_coord == 'cxywh':
-            boxes = xy_to_cxcy(boxes)
+            boxes = box_xyxy_to_cxcywh(boxes)
 
         if self.split == "val" or self.split == "test":
             return image, boxes, labels, info

@@ -156,8 +156,8 @@ def build_dataloader(opts):
         test_set = COCO_Dataset(data_root=opts.data_root,
                                 split='val',
                                 download=True,
-                                boxes_coord='cxywh',
                                 transform=transform_test,
+                                boxes_coord='cxywh',
                                 visualization=False)
 
         train_loader = DataLoader(train_set,

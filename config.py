@@ -18,8 +18,8 @@ def get_args_parser():
     parser.add_argument('--data_root', type=str)
     parser.add_argument('--data_type', type=str)
     parser.add_argument('--num_workers', type=int)
+    parser.add_argument('--batch_size', type=int)
     parser.add_argument('--resize', type=int, default=1024)
-    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--is_mosaic_transform_true', dest='mosaic_transform', action='store_true')
 
     # * model
