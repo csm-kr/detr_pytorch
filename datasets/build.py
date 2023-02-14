@@ -149,11 +149,14 @@ def build_dataloader(opts):
                                  split='train',
                                  download=True,
                                  transform=transform_train,
+                                 mosaic_transform=opts.mosaic_transform,
+                                 boxes_coord='cxywh',
                                  visualization=False)
 
         test_set = COCO_Dataset(data_root=opts.data_root,
                                 split='val',
                                 download=True,
+                                boxes_coord='cxywh',
                                 transform=transform_test,
                                 visualization=False)
 
