@@ -3,7 +3,7 @@
 re-implementation of detr
 Please refer to https://arxiv.org/abs/2005.12872
  
-- Property of this repo.
+### Property of this repo.
 - [x] Not Use the "Nested Tensor"
 - [x] Not Use nn.MultiheadAttention, instead of use timm like transformer(from scratch)
 - [x] Change Hungarian mather efficiently
@@ -13,12 +13,13 @@ Please refer to https://arxiv.org/abs/2005.12872
 - [x] Not distinguish the learning rate between transformer and backbone.
 - [x] Fix the resolution of images
 
-- To Do
-- [x] Segmentation
+### To Do
+- [] Segmentation
+- [] voc experiments
 
-- Training Setting
+### Training Setting
 ```
-- batch size : 36
+- batch size : 36 (official - 64)
 - optimizer : Adamw
 - epoch : 300
 - lr : 1e-4 
