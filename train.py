@@ -1,15 +1,8 @@
-import math
 import os
-import sys
-from typing import Iterable
-
-import torch
-
-import util.misc as utils
-from datasets.coco_eval import CocoEvaluator
-from datasets.panoptic_eval import PanopticEvaluator
 import time
+import torch
 from tqdm import tqdm
+from typing import Iterable
 
 
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
@@ -20,12 +13,17 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
     tic = time.time()
 
     for idx, data in enumerate(tqdm(train_loader)):
-        samples, targets = data
-        samples = samples.to(device)
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-        outputs = model(samples)
-        loss_dict = criterion(outputs, targets)
+        images = data[0]
+        boxes = data[1]
+        labels = data[2]
+
+        images = images.to(device)
+        boxes = [b.to(device) for b in boxes]
+        labels = [l.to(device) for l in labels]
+
+        outputs = model(images)
+        loss_dict = criterion(outputs, boxes, labels)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
 
@@ -41,7 +39,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
             lr = param_group['lr']
 
         # for each steps
-        if (idx % opts.vis_step == 0 or idx == len(train_loader) - 1) and opts.rank == 0:
+        if (idx % opts.train_vis_step == 0 or idx == len(train_loader) - 1) and opts.rank == 0:
             print('Epoch: [{0}]\t'
                   'Step: [{1}/{2}]\t'
                   'Loss: {loss:.4f}\t'
@@ -60,14 +58,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                          update='append',
                          opts=dict(xlabel='step',
                                    ylabel='Loss',
-                                   title='train_loss_{}'.format(opts.name),
+                                   title='train_loss_' + opts.name,
                                    legend=['Total Loss']))
 
     if opts.rank == 0:
         save_path = os.path.join(opts.log_dir, opts.name, 'saves')
         os.makedirs(save_path, exist_ok=True)
-
-        # checkpoint = {'epoch': epoch,
-        #               'model_state_dict': model.state_dict()}
-        #
-        # torch.save(checkpoint, os.path.join(save_path, opts.name + '.{}.pth.tar'.format(epoch)))

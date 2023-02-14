@@ -3,53 +3,59 @@ import time
 import torch
 import numpy as np
 from tqdm import tqdm
-from datasets.coco_eval import CocoEvaluator
+from evaluation.coco_eval import CocoEvaluator
 
 
 @torch.no_grad()
-def test_and_eval(epoch, base_ds, device, vis, test_loader, model, criterion, postprocessors, xl_log_saver=None, result_best=None, opts=None, is_load=False):
+def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocessors, xl_log_saver=None, result_best=None, opts=None, is_load=False):
 
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())  # 'bbox'
-    coco_evaluator = CocoEvaluator(base_ds, iou_types)
+    coco_evaluator = CocoEvaluator(test_loader.dataset.coco, iou_types)
     print('Validation of epoch [{}]'.format(epoch))
     model.eval()
 
     checkpoint = None
-    if opts.is_load:
-        f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
-        device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
-        if isinstance(model, (torch.nn.parallel.distributed.DistributedDataParallel, torch.nn.DataParallel)):
-            checkpoint = torch.load(f=f,
-                                    map_location=device)
-            state_dict = checkpoint['model_state_dict']
-            model.load_state_dict(state_dict)
-        else:
-            checkpoint = torch.load(f=f,
-                                    map_location=device)
-            state_dict = checkpoint['model_state_dict']
-            state_dict = {k.replace('module.', ''): v for (k, v) in state_dict.items()}
-            model.load_state_dict(state_dict)
+
+    # if opts.is_load:
+    #     f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
+    #     device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
+    #     if isinstance(model, (torch.nn.parallel.distributed.DistributedDataParallel, torch.nn.DataParallel)):
+    #         checkpoint = torch.load(f=f,
+    #                                 map_location=device)
+    #         state_dict = checkpoint['model_state_dict']
+    #         model.load_state_dict(state_dict)
+    #     else:
+    #         checkpoint = torch.load(f=f,
+    #                                 map_location=device)
+    #         state_dict = checkpoint['model_state_dict']
+    #         state_dict = {k.replace('module.', ''): v for (k, v) in state_dict.items()}
+    #         model.load_state_dict(state_dict)
 
     tic = time.time()
     sum_loss = []
 
     for idx, data in enumerate(tqdm(test_loader)):
 
-        samples, targets = data
+        images = data[0]
+        boxes = data[1]
+        labels = data[2]
+        info = data[3]
 
         # ---------- cuda ----------
-        samples = samples.to(device)
-        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        images = images.to(device)
+        boxes = [b.to(device) for b in boxes]
+        labels = [l.to(device) for l in labels]
+        info = [{k: v.to(device) for k, v in i.items()} for i in info]
 
-        outputs = model(samples)
-        loss_dict = criterion(outputs, targets)
+        outputs = model(images)
+        loss_dict = criterion(outputs, boxes, labels)
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
         sum_loss.append(losses.item())
 
-        orig_target_sizes = torch.stack([t["orig_size"] for t in targets], dim=0)
+        orig_target_sizes = torch.stack([i["orig_size"] for i in info], dim=0)
         results = postprocessors['bbox'](outputs, orig_target_sizes)
-        res = {target['image_id'].item(): output for target, output in zip(targets, results)}
+        res = {i['image_id'].item(): output for i, output in zip(info, results)}
 
         if coco_evaluator is not None:
             coco_evaluator.update(res)
@@ -57,7 +63,7 @@ def test_and_eval(epoch, base_ds, device, vis, test_loader, model, criterion, po
         toc = time.time()
 
         # ---------- print ----------
-        if idx % opts.vis_step == 0 or idx == len(test_loader) - 1:
+        if idx % opts.test_vis_step == 0 or idx == len(test_loader) - 1:
             print('Epoch: [{0}]\t'
                   'Step: [{1}/{2}]\t'
                   'Loss: {loss:.4f}\t'
@@ -88,7 +94,7 @@ def test_and_eval(epoch, base_ds, device, vis, test_loader, model, criterion, po
                      update='append',
                      opts=dict(xlabel='step',
                                ylabel='test',
-                               title='test loss and map for {}'.format(opts.name),
+                               title='test_loss_' + opts.name,
                                legend=['test Loss', 'mAP']))
 
         if xl_log_saver is not None:
