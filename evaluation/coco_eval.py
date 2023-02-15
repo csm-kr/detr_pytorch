@@ -15,7 +15,7 @@ import torch
 from pycocotools.cocoeval import COCOeval
 from pycocotools.coco import COCO
 import pycocotools.mask as mask_util
-from utils.util import all_gather
+from util.misc import all_gather
 
 
 class CocoEvaluator(object):

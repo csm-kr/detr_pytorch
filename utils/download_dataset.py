@@ -1,7 +1,7 @@
 import os
 import wget
 import glob
-from utils.util import bar_custom, xy_to_cxcy
+from utils.util import bar_custom
 
 # coco
 import zipfile

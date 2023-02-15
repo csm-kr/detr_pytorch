@@ -5,23 +5,21 @@ import visdom
 # data
 from datasets.build import build_dataloader
 # model
-from models.build import build_model
-# loss
-from losses.build import build_loss
-# log
+from models import build_model___
+from utils import init_for_distributed
 from log import XLLogSaver
+
 # train & test
 from train import train_one_epoch
 from test import test_and_eval
 
-# distributed
-from utils import init_for_distributed
+from losses.loss import build_loss
 from models.postprocessor import PostProcess
 
 
 def main_worker(rank, opts):
 
-    # 1. ** opts **
+    # 1. ** argparser **
     print(opts)
 
     if opts.distributed:
@@ -31,59 +29,65 @@ def main_worker(rank, opts):
     device = torch.device('cuda:{}'.format(int(opts.gpu_ids[opts.rank])))
 
     # 3. ** visdom **
-    vis = visdom.Visdom(port=opts.visdom_port)
+    if opts.eval:
+        vis = None
+    else:
+        vis = visdom.Visdom(port=opts.visdom_port)
 
-    # 4. ** dataloader **
     train_loader, test_loader = build_dataloader(opts)
 
     # 5. ** model **
-    model = build_model(opts)
+    model = build_model___(opts)
 
-    # 6. ** loss **
-    criterion = build_loss(opts).to(device)
+    criterion = build_loss(opts)
+    criterion = criterion.to(device)
     postprocessors = {'bbox': PostProcess()}
 
     model.to(device)
     criterion.to(device)
 
+    model_without_ddp = model
+    if opts.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[int(opts.gpu_ids[opts.rank])])
+        model_without_ddp = model.module
+
+    # 6. optimizer
     param_dicts = [
-        {"params": [p for n, p in model.named_parameters() if "backbone" not in n and p.requires_grad]},
+        {"params": [p for n, p in model_without_ddp.named_parameters() if "backbone" not in n and p.requires_grad]},
         {
-            "params": [p for n, p in model.named_parameters() if "backbone" in n and p.requires_grad],
+            "params": [p for n, p in model_without_ddp.named_parameters() if "backbone" in n and p.requires_grad],
             "lr": opts.lr_backbone,
         },
     ]
-
-    # 7. ** optimizer **
     optimizer = torch.optim.AdamW(param_dicts,
                                   lr=opts.lr,
                                   weight_decay=opts.weight_decay)
 
-    # 8. ** logger **
+    # 7. logger
     xl_log_saver = None
     if opts.rank == 0:
         xl_log_saver = XLLogSaver(xl_folder_name=os.path.join(opts.log_dir, opts.name),
                                   xl_file_name=opts.name,
                                   tabs=('epoch', 'mAP', 'val_loss'))
 
-    # 9. ** set best results **
+    # 8. set best results
     result_best = {'epoch': 0, 'mAP': 0., 'val_loss': 0.}
 
-    # 10. ** lr_scheduler **
+    # 9. lr_scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opts.lr_drop)
 
     for epoch in range(opts.start_epoch, opts.epochs):
         if opts.distributed:
             train_loader.sampler.set_epoch(epoch)
 
-        # 11. ** train **
+        # 11. train
         train_one_epoch(
             model, criterion, train_loader, optimizer, device, epoch,
             opts.clip_max_norm, opts, vis)
 
         lr_scheduler.step()
 
-        # 12. ** test **
+        # 12. test
         test_and_eval(
             epoch, device, vis, test_loader, model, criterion,
             postprocessors, xl_log_saver, result_best, opts)

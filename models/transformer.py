@@ -30,13 +30,48 @@ class MHA(nn.Module):
         att = F.softmax(qk * self.scale, dim=3)                            # b, h, n_q, n_k
         att_out = torch.einsum('bhnm,bmhd->bnhd', (att, _v))               # b, n_q, h, d
         x = att_out.reshape(B, -1, C)                                      # b, n_q, h*d
+
+        # out = self.fc(att_out)                                           # b, n_q, d
+        #
+        # q = self.q(x_q).reshape(B, N_q, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        # k = self.k(x_k).reshape(B, N_kv, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        # v = self.v(x_v).reshape(B, N_kv, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
+        #
+        # attn = (q @ k.transpose(-2, -1)) * self.scale
+        # attn = attn.softmax(dim=-1)
+        # attn = self.attn_drop(attn)
+        #
+        # x = (attn @ v).transpose(1, 2).reshape(B, N_q, C)
+
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
 
 
+class multihead(nn.Module):
+    def __init__(self, input_size, heads, dimension):
+        super(multihead, self).__init__()
+        self.h, self.d = heads, dimension
+        self.lq = nn.Linear(input_size, self.h * self.d)
+        self.lk = nn.Linear(input_size, self.h * self.d)
+        self.lv = nn.Linear(input_size, self.h * self.d)
+        self.fc = nn.Linear(self.h * self.d, self.d)
+
+    def forward(self, q, k, v):
+        b, n_q, n_k, h, d = q.size(0), q.size(1), k.size(1), self.h, self.d
+
+        q, k, v = self.lq(q), self.lk(k), self.lv(v)                    # b, n_*, h*d
+        _q, _k, _v = map(lambda x: x.reshape(b, -1, h, d), [q, k, v])   # b, n_*, h, d
+        qk = torch.einsum('bnhd,bmhd->bhnm', (q,k))                     # b, h, n_q, n_k
+        att = F.softmax(qk / (self.d ** .5), dim=3)                     # b, h, n_q, n_k
+        att_out = torch.einsum('bhnm,bmhd->bnhd', (att,v))              # b, n_q, h, d
+        att_out = att_out.reshape(b, -1, h*d)                           # b, n_q, h*d
+        out = self.fc(att_out)                                          # b, n_q, d
+        return out
+
+
 class MSA(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=False, dropout=0.1):
+    def __init__(self, dim, num_heads=8, qkv_bias=True, dropout=0.1):
         super().__init__()
         assert dim % num_heads == 0, 'dim should be divisible by num_heads'
         self.num_heads = num_heads
@@ -96,6 +131,7 @@ class EncoderLayer(nn.Module):
     def __init__(self, d_model, d_feedforward=2048, dropout=0.1):
         super().__init__()
         self.attn = MHA(dim=d_model, attn_drop=dropout, proj_drop=dropout)
+        # self.attn = MSA(dim=d_model, dropout=dropout)
         self.mlp = MLP(in_features=d_model, hidden_features=d_feedforward, out_features=d_model, dropout=dropout)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
@@ -114,16 +150,17 @@ class EncoderLayer(nn.Module):
 
 
 class Encoder(nn.Module):
-    def __init__(self, d_model, num_layers=6):
+    def __init__(self, d_model, num_layers=6, dropout=0.1):
         super().__init__()
 
         self.encoders = nn.ModuleList([
-            EncoderLayer(d_model, d_feedforward=2048, dropout=0.1)
+            EncoderLayer(d_model, d_feedforward=2048, dropout=dropout)
             for _ in range(num_layers)])
 
     def forward(self, x):
         for enc in self.encoders:
             x = enc(x)
+            # print(x)
         return x
 
 
@@ -161,12 +198,12 @@ class DecoderLayer(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, d_model, num_layers=6):
+    def __init__(self, d_model, num_layers=6, dropout=0.1):
         super().__init__()
 
         self.norm = nn.LayerNorm(d_model)
         self.decoders = nn.ModuleList([
-            DecoderLayer(d_model, d_feedforward=2048, dropout=0.1)
+            DecoderLayer(d_model, d_feedforward=2048, dropout=dropout)
             for _ in range(num_layers)])
 
     def forward(self, tgt, x, query_embed):
@@ -179,16 +216,17 @@ class Decoder(nn.Module):
 
 
 class Transformer(nn.Module):
-    def __init__(self, d_model):
+    def __init__(self, d_model, dropout=0.1):
         super().__init__()
 
-        self.encoder = Encoder(d_model)
-        self.decoder = Decoder(d_model)
+        self.encoder = Encoder(d_model, num_layers=6, dropout=dropout)
+        self.decoder = Decoder(d_model, num_layers=6, dropout=dropout)
         self._reset_parameters()
 
     def _reset_parameters(self):
         for p in self.parameters():
             if p.dim() > 1:
+                torch.manual_seed(0)
                 nn.init.xavier_uniform_(p)
 
     def forward(self, x, query_embed):
@@ -210,6 +248,34 @@ class Transformer(nn.Module):
 
 
 if __name__ == '__main__':
+
+    # Encoder Layer
+    # x = torch.randn([2, 1024, 256])
+    # encoder = EncoderLayer(d_model=256)
+    # out = encoder(x)
+    # print(out.size())
+
+    # Encoder
+    # x = torch.randn([2, 1024, 256])
+    # encoder = Encoder(d_model=256, num_layers=6)
+    # out = encoder(x)
+    # print(out.size())
+
+    # Decoder Layer
+    # x = torch.randn([2, 1024, 256])
+    # tgt = torch.randn([2, 100, 256])
+    # query_embed = torch.randn([2, 100, 256])
+    # decoder = DecoderLayer(d_model=256)
+    # out = decoder(tgt, x, query_embed)
+    # print(out.size())
+    #
+    # # Decoder
+    # x = torch.randn([2, 1024, 256])
+    # tgt = torch.randn([2, 100, 256])
+    # query_embed = torch.randn([2, 100, 256])
+    # decoder = Decoder(d_model=256, num_layers=6)
+    # out = decoder(tgt, x, query_embed)
+    # print(out.size())
 
     # Transformer
     x = torch.randn([2, 256, 32, 32])

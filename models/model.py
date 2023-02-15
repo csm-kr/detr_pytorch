@@ -44,21 +44,6 @@ class FrozenBatchNorm2d(torch.nn.Module):
         return x * scale + bias
 
 
-class MLP(nn.Module):
-    """ Very simple multi-layer perceptron (also called FFN)"""
-
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
-        super().__init__()
-        self.num_layers = num_layers
-        h = [hidden_dim] * (num_layers - 1)
-        self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
-
-    def forward(self, x):
-        for i, layer in enumerate(self.layers):
-            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
-        return x
-
-
 class BoxLayer(nn.Module):
     def __init__(self):
         super().__init__()
@@ -92,7 +77,7 @@ class DETR(nn.Module):
         self.transformer = Transformer(d_model)
         self.input_proj = nn.Conv2d(2048, 256, kernel_size=1)
         self.class_layer = nn.Linear(d_model, num_classes + 1)
-        self.box_layer = MLP(256, 256, 4, 3)
+        self.box_layer = BoxLayer()
 
         # embedding
         self.query_embed = nn.Embedding(num_queries, d_model)
@@ -103,10 +88,7 @@ class DETR(nn.Module):
     def count_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
-    # def forward(self, x):
-    def forward(self, samples):
-        # mask 없이 tensor 만  출력해서 Nested Tensor 를 사용하지 않음
-        x = samples
+    def forward(self, x):
 
         x = self.backbone(x)                                       # [B, 2048, 32, 32]
         x = self.input_proj(x)                                     # [B, 256, 32, 32]
@@ -122,28 +104,18 @@ class DETR(nn.Module):
 
     @torch.jit.unused
     def _set_aux_loss(self, outputs_class, outputs_coord):
-        # this is a workaround to make torchscript happy, as torchscript
-        # doesn't support dictionary with non-homogeneous values, such
-        # as a dict having both a Tensor and a list.
         return [{'pred_logits': a, 'pred_boxes': b}
                 for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
 
-if __name__ == '__main__':
-    img = torch.randn(2, 3, 1024, 1024).cuda()
-    detr = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
-    out = detr(img)
-    print('decoder layer 6')
-    print(out['pred_logits'].size())
-    print(out['pred_boxes'].size())
-    for i, out_dec in enumerate(out['aux_outputs']):
-        print('decoder layer {}'.format(i + 1))
-        print(out_dec['pred_logits'].size())
-        print(out_dec['pred_boxes'].size())
+def build_model_(args):
+    model = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
+    return model
 
-    '''
-    ...
-    decoder layer 6
-    torch.Size([2, 100, 92])
-    torch.Size([2, 100, 4])
-    '''
+
+if __name__ == '__main__':
+    img = torch.randn(12, 3, 1024, 1024).cuda()
+    detr = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
+    pred_boxes, pred_classes = detr(img)
+    print(pred_boxes.size())
+    print(pred_classes.size())

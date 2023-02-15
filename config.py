@@ -20,16 +20,17 @@ def get_args_parser():
     parser.add_argument('--num_workers', type=int)
     parser.add_argument('--batch_size', type=int)
     parser.add_argument('--resize', type=int, default=1024)
+    parser.add_argument('--boxes_coord', type=str, default='cxywh')
     parser.add_argument('--is_mosaic_transform_true', dest='mosaic_transform', action='store_true')
 
     # * model
     parser.add_argument('--num_classes', type=int)
+    parser.add_argument('--dec_layers', type=int, default=6)
 
     # * loss
     parser.add_argument('--set_cost_class', default=1, type=float, help="Class coefficient in the matching cost")
     parser.add_argument('--set_cost_bbox', default=5, type=float, help="L1 box coefficient in the matching cost")
     parser.add_argument('--set_cost_giou', default=2, type=float, help="giou box coefficient in the matching cost")
-    parser.add_argument('--dice_loss_coef', default=1, type=float)
     parser.add_argument('--bbox_loss_coef', default=5, type=float)
     parser.add_argument('--giou_loss_coef', default=2, type=float)
     parser.add_argument('--eos_coef', default=0.1, type=float, help="Relative classification weight of the no-object class")
@@ -41,10 +42,10 @@ def get_args_parser():
     parser.add_argument('--epochs', default=300, type=int)
     parser.add_argument('--lr_drop', default=200, type=int)
     parser.add_argument('--clip_max_norm', default=0.1, type=float, help='gradient clipping max norm')
-
     parser.add_argument('--start_epoch', type=int, default=0, help='for resume')
 
     # * test
+    parser.add_argument('--eval', action='store_true')
     parser.add_argument('--test_epoch', type=str, default='best')
     parser.add_argument('--conf_thres', type=float, default=0.05, help='score threshold - 0.05 for test 0.5 for demo')
     parser.add_argument('--top_k', type=int, default=200, help='set top k for after nms')
@@ -60,5 +61,6 @@ def get_args_parser():
     parser.add_argument('--gpu_ids', nargs="+", default=['0', '1'])   # usage : --gpu_ids 0, 1, 2, 3
     parser.add_argument('--rank', type=int, default=0)
     parser.add_argument('--world_size', type=int)
+
     return parser
 

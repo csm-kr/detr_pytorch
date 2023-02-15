@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import utils.box_ops as box_ops
-from utils.util import get_world_size, is_dist_avail_and_initialized
+from losses.matcher import build_matcher
+from util.misc import (get_world_size, is_dist_avail_and_initialized)
+from util import box_ops
 
 
 class SetCriterion(nn.Module):
@@ -31,52 +32,36 @@ class SetCriterion(nn.Module):
         self.register_buffer('empty_weight', empty_weight)
 
     def loss_labels(self, outputs, boxes, labels, indices, num_boxes, log=True):
-        """Classification loss (NLL)
-        targets dicts must contain the key "labels" containing a tensor of dim [nb_target_boxes]
-        """
-        assert 'pred_logits' in outputs
-        src_logits = outputs['pred_logits']
-
-        target_classes = self.make_target(indices, labels)
-        loss_ce = F.cross_entropy(src_logits.transpose(1, 2), target_classes, self.empty_weight)
-        losses = {'loss_ce': loss_ce}
+        ########################################################
+        target_classes_ = self.make_target(indices, labels)
+        loss_ce_ = F.cross_entropy(outputs['pred_logits'].transpose(1, 2), target_classes_, self.empty_weight)
+        losses = {'loss_ce': loss_ce_}
+        ########################################################
         return losses
-
-    @torch.no_grad()
-    def loss_cardinality(self, outputs, boxes, labels, indices, num_boxes):
-        return 0
 
     def loss_boxes(self, outputs, boxes, labels, indices, num_boxes):
         """Compute the losses related to the bounding boxes, the L1 regression loss and the GIoU loss
            targets dicts must contain the key "boxes" containing a tensor of dim [nb_target_boxes, 4]
            The target boxes are expected in format (center_x, center_y, w, h), normalized by the image size.
         """
-        assert 'pred_boxes' in outputs
 
-        src_boxes = outputs['pred_boxes']
-        target_boxes = self.make_target(indices, boxes)
-        mask = ((target_boxes != -1).sum(-1)/4).type(torch.bool)
-        loss_bbox = F.l1_loss(src_boxes[mask], target_boxes[mask], reduction='none')
-
+        ########################################################
+        target_boxes_ = self.make_target(indices, boxes)
+        mask = ((target_boxes_ != -1).sum(-1)/4).type(torch.bool)
         losses = {}
-        losses['loss_bbox'] = loss_bbox.sum() / num_boxes
+        loss_bbox_ = F.l1_loss(outputs['pred_boxes'][mask], target_boxes_[mask], reduction='none')
+        loss_giou_ = 1 - torch.diag(box_ops.generalized_box_iou(
+            box_ops.box_cxcywh_to_xyxy(outputs['pred_boxes'][mask]),
+            box_ops.box_cxcywh_to_xyxy(target_boxes_[mask])))
 
-        loss_giou = 1 - torch.diag(box_ops.generalized_box_iou(
-            box_ops.box_cxcywh_to_xyxy(src_boxes[mask]),
-            box_ops.box_cxcywh_to_xyxy(target_boxes[mask])))
-
-        losses['loss_giou'] = loss_giou.sum() / num_boxes
+        losses['loss_bbox'] = loss_bbox_.sum() / num_boxes
+        losses['loss_giou'] = loss_giou_.sum() / num_boxes
         return losses
-
-    def loss_masks(self, outputs, boxes, labels, indices, num_boxes):
-        return 0
 
     def get_loss(self, loss, outputs, boxes, labels, indices, num_boxes, **kwargs):
         loss_map = {
             'labels': self.loss_labels,
-            'cardinality': self.loss_cardinality,
             'boxes': self.loss_boxes,
-            'masks': self.loss_masks
         }
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, boxes, labels, indices, num_boxes, **kwargs)
@@ -114,12 +99,7 @@ class SetCriterion(nn.Module):
         return ret
 
     def forward(self, outputs, boxes, labels):
-        """ This performs the loss computation.
-        Parameters:
-             outputs: dict of tensors, see the output specification of the model for the format
-             targets: list of dicts, such that len(targets) == batch_size.
-                      The expected keys in each dict depends on the losses applied, see each loss' doc
-        """
+
         outputs_without_aux = {k: v for k, v in outputs.items() if k != 'aux_outputs'}
 
         # Retrieve the matching between the outputs of the last layer and the targets
@@ -142,12 +122,32 @@ class SetCriterion(nn.Module):
             for i, aux_outputs in enumerate(outputs['aux_outputs']):
                 indices = self.matcher(aux_outputs, boxes, labels)
                 for loss in self.losses:
+                    if loss == 'masks':
+                        # Intermediate masks losses are too costly to compute, we ignore them.
+                        continue
                     kwargs = {}
+                    if loss == 'labels':
+                        # Logging is enabled only for the last layer
+                        kwargs = {'log': False}
                     l_dict = self.get_loss(loss, aux_outputs, boxes, labels, indices, num_boxes, **kwargs)
                     l_dict = {k + f'_{i}': v for k, v in l_dict.items()}
                     losses.update(l_dict)
+
         return losses
 
 
+def build_loss(args):
+    matcher = build_matcher(args)
+    weight_dict = {'loss_ce': 1, 'loss_bbox': args.bbox_loss_coef}
+    weight_dict['loss_giou'] = args.giou_loss_coef
 
+    aux_weight_dict = {}
+    for i in range(args.dec_layers - 1):
+        aux_weight_dict.update({k + f'_{i}': v for k, v in weight_dict.items()})
+    weight_dict.update(aux_weight_dict)
+    num_classes = args.num_classes # 91
 
+    losses = ['labels', 'boxes']
+    criterion = SetCriterion(num_classes, matcher=matcher, weight_dict=weight_dict,
+                             eos_coef=args.eos_coef, losses=losses)
+    return criterion

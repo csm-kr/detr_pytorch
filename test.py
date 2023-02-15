@@ -10,12 +10,12 @@ from evaluation.coco_eval import CocoEvaluator
 def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocessors, xl_log_saver=None, result_best=None, opts=None, is_load=False):
 
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())  # 'bbox'
+    # coco_evaluator = CocoEvaluator(base_ds, iou_types)
     coco_evaluator = CocoEvaluator(test_loader.dataset.coco, iou_types)
     print('Validation of epoch [{}]'.format(epoch))
     model.eval()
 
     checkpoint = None
-
     # if opts.is_load:
     #     f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
     #     device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
@@ -41,7 +41,6 @@ def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocess
         labels = data[2]
         info = data[3]
 
-        # ---------- cuda ----------
         images = images.to(device)
         boxes = [b.to(device) for b in boxes]
         labels = [l.to(device) for l in labels]
@@ -49,6 +48,7 @@ def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocess
 
         outputs = model(images)
         loss_dict = criterion(outputs, boxes, labels)
+
         weight_dict = criterion.weight_dict
         losses = sum(loss_dict[k] * weight_dict[k] for k in loss_dict.keys() if k in weight_dict)
         sum_loss.append(losses.item())
@@ -94,7 +94,7 @@ def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocess
                      update='append',
                      opts=dict(xlabel='step',
                                ylabel='test',
-                               title='test_loss_' + opts.name,
+                               title='test_loss_{}'.format(opts.name),
                                legend=['test Loss', 'mAP']))
 
         if xl_log_saver is not None:
