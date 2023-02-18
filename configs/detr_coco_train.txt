@@ -1,5 +1,5 @@
 # name
-name = detr_coco_20230215__
+name = detr_coco_20230219
 
 # data
 data_root = /home/cvmlserver7/Sungmin/data/coco/

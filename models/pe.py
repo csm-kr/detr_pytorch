@@ -25,7 +25,7 @@ def make_pos(device, scale, temperature, num_pos_feats):
 
     x_ = torch.arange(1, 33, dtype=torch.float32, device=device)
     y_ = torch.arange(1, 33, dtype=torch.float32, device=device)
-    y_emb, x_emb = torch.meshgrid(x_, y_, indexing='xy')
+    y_emb, x_emb = torch.meshgrid(x_, y_, indexing='ij')
 
     # normalize:
     eps = 1e-6
