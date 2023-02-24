@@ -7,7 +7,7 @@ from util.box_ops import box_cxcywh_to_xyxy
 class PostProcess(nn.Module):
     """ This module converts the model's output into the format expected by the coco api"""
     @torch.no_grad()
-    def forward(self, outputs, target_sizes):
+    def forward(self, outputs, target_sizes, is_demo=False):
         """ Perform the computation
         Parameters:
             outputs: raw outputs of the model
@@ -30,5 +30,7 @@ class PostProcess(nn.Module):
         scale_fct = torch.stack([img_w, img_h, img_w, img_h], dim=1)
         boxes = boxes * scale_fct[:, None, :]
 
+        if is_demo:
+            return box_cxcywh_to_xyxy(out_bbox), labels, scores
         results = [{'scores': s, 'labels': l, 'boxes': b} for s, l, b in zip(scores, labels, boxes)]
         return results

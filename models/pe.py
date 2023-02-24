@@ -22,10 +22,11 @@ def get_batch_pos_embed(pos_embed, tensor):
 
 
 def make_pos(device, scale, temperature, num_pos_feats):
-
+    # 29 line and 39 line must update!
     x_ = torch.arange(1, 33, dtype=torch.float32, device=device)
     y_ = torch.arange(1, 33, dtype=torch.float32, device=device)
-    y_emb, x_emb = torch.meshgrid(x_, y_, indexing='ij')
+    y_emb, x_emb = torch.meshgrid(x_, y_)
+    # y_emb, x_emb = torch.meshgrid(x_, y_, indexing='ij')
 
     # normalize:
     eps = 1e-6
@@ -34,10 +35,8 @@ def make_pos(device, scale, temperature, num_pos_feats):
 
     # 0 ~ 128 (pos)
     i = torch.arange(num_pos_feats, dtype=torch.float32, device=device)
-    # div_term_ = temperature ** (2 * (i // 2) / num_pos_feats)
-    div_term = temperature ** (2 * (torch.div(i, 2, rounding_mode='floor')) / num_pos_feats)
-
-    # print(torch.equal(div_term_, div_term))
+    div_term = temperature ** (2 * (i // 2) / num_pos_feats)
+    # div_term = temperature ** (2 * (torch.div(i, 2, rounding_mode='floor')) / num_pos_feats)
 
     # 차원늘리기 [32, 32, 1] / [128] -> [32, 32, 128]
     pos_x_ = x_emb[:, :, None] / div_term
