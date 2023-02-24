@@ -3,7 +3,7 @@
 re-implementation of detr
 Please refer to https://arxiv.org/abs/2005.12872
  
-### Property of this repo.
+### Properties of this repo.
 - [x] Not Use the "Nested Tensor"
 - [x] Not Use nn.MultiheadAttention, instead of use timm like transformer(from scratch)
 - [x] Change Hungarian mather efficiently
@@ -31,10 +31,10 @@ Please refer to https://arxiv.org/abs/2005.12872
 
 - quantitative results
 
-|methods        | Traning Dataset        |    Testing Dataset     | Resolution.  | AP      |
-|---------------|------------------------| ---------------------- | ------------ | ------- |
-|papers         | COCOtrain2017          |  COCO val2017(minival) | 800 ~ 1333   | 42.0    |
-|this repo      | COCOtrain2017          |  COCO val2017(minival) | 1024 x 1024  | 40.5    |
+|methods        | Traning Dataset        |    Testing Dataset     | Resolution.  | AP               |
+|---------------|------------------------| ---------------------- | ------------ | ---------------- |
+|papers         | COCOtrain2017          |  COCO val2017(minival) | 800 ~ 1333   | 42.0             |
+|this repo      | COCOtrain2017          |  COCO val2017(minival) | 1024 x 1024  | 40.6 (229 epoch) |
 
 - qualitative reusults
 
