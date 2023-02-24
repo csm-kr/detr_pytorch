@@ -10,6 +10,7 @@ figure/others
 
 # download
 *.tmp
+*.xlsx
 
 # train
 save/
