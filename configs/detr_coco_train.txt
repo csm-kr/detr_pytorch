@@ -1,9 +1,10 @@
 # name
-name = detr_coco_20230219
+name = detr_coco_aug_20230226
 
 # data
 data_root = /home/cvmlserver7/Sungmin/data/coco/
 data_type = coco
+is_mosaic_transform_true
 
 # batch size
 batch_size = 36

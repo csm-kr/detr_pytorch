@@ -29,31 +29,9 @@ def build_dataloader(opts):
 
     # -------------------- transform --------------------
     # DETR
-    scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
-    transform_train = T.Compose([
-        T.RandomHorizontalFlip(),
-        T.RandomSelect(
-            T.RandomResize(scales, max_size=1333),
-            T.Compose([
-                T.RandomResize([400, 500, 600]),
-                T.RandomSizeCrop(384, 600),
-                T.RandomResize(scales, max_size=1333),
-            ]),
-        ),
-        T.Resize(size),
-        normalize
-    ])
-
-    # -------------------- transform --------------------
-    # DETR + (photo + zoom out + crop)
     # scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
     # transform_train = T.Compose([
     #     T.RandomHorizontalFlip(),
-    #
-    #     T.RandomPhotoDistortion(),
-    #     T.RandomZoomOut(max_scale=4),
-    #     T.RandomCrop(),
-    #
     #     T.RandomSelect(
     #         T.RandomResize(scales, max_size=1333),
     #         T.Compose([
@@ -65,6 +43,28 @@ def build_dataloader(opts):
     #     T.Resize(size),
     #     normalize
     # ])
+
+    # -------------------- transform --------------------
+    # DETR + (photo + zoom out + crop)
+    scales = [480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800]
+    transform_train = T.Compose([
+        T.RandomHorizontalFlip(),
+
+        T.RandomPhotoDistortion(),
+        T.RandomZoomOut(max_scale=4),
+        T.RandomCrop(),
+
+        T.RandomSelect(
+            T.RandomResize(scales, max_size=1333),
+            T.Compose([
+                T.RandomResize([400, 500, 600]),
+                T.RandomSizeCrop(384, 600),
+                T.RandomResize(scales, max_size=1333),
+            ]),
+        ),
+        T.Resize(size),
+        normalize
+    ])
 
     # -------------------- transform --------------------
     # DETR + YOLO

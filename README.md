@@ -33,8 +33,8 @@ Please refer to https://arxiv.org/abs/2005.12872
 
 |methods        | Traning Dataset        |    Testing Dataset     | Resolution.  | AP               |
 |---------------|------------------------| ---------------------- | ------------ | ---------------- |
-|papers         | COCOtrain2017          |  COCO val2017(minival) | 800 ~ 1333   | 42.0             |
-|this repo      | COCOtrain2017          |  COCO val2017(minival) | 1024 x 1024  | 40.6 (229 epoch) |
+|papers         | COCOtrain2017          |  COCO val2017(minival) | 800 ~ 1333   | 42.0 (500 epoch) |
+|this repo      | COCOtrain2017          |  COCO val2017(minival) | 1024 x 1024  | 41.1 (300 epoch) |
 
 - qualitative reusults
 

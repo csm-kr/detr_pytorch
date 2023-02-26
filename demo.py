@@ -30,7 +30,7 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
     total_time = 0
 
     # 2. load .pth
-    checkpoint = torch.load(f=os.path.join('.logs', 'detr_coco_20230219', 'saves', 'detr_coco_20230219' + '.{}.pth.tar'.format(229)),
+    checkpoint = torch.load(f=os.path.join('.logs', 'detr_coco_20230219', 'saves', 'detr_coco_20230219' + '.best.pth.tar'),
                             map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
