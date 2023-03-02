@@ -14,9 +14,10 @@ class HungarianLoss(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.weight_dict = weight_dict
-        self.eos_coef = 0.1
+
+        # for empty_weight
         empty_weight = torch.ones(self.num_classes + 1)
-        empty_weight[-1] = self.eos_coef
+        empty_weight[-1] = 0.1  # (eos_coef)
         self.register_buffer('empty_weight', empty_weight)
 
     @torch.no_grad()

@@ -13,7 +13,8 @@ from log import XLLogSaver
 from train import train_one_epoch
 from test import test_and_eval
 
-from losses.loss import build_loss
+# from losses.loss import build_loss
+from losses.new_loss import build_loss
 from models.postprocessor import PostProcess
 
 
