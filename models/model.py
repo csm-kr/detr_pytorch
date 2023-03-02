@@ -77,6 +77,12 @@ class DETR(nn.Module):
         self.transformer = Transformer(d_model)
         self.input_proj = nn.Conv2d(2048, 256, kernel_size=1)
         self.class_layer = nn.Linear(d_model, num_classes + 1)
+        # self.box_layer = nn.Sequential(nn.Linear(in_features=256, out_features=256),
+        #                                nn.ReLU(inplace=True),
+        #                                nn.Linear(in_features=256, out_features=256),
+        #                                nn.ReLU(inplace=True),
+        #                                nn.Linear(in_features=256, out_features=4),
+        #                                )
         self.box_layer = BoxLayer()
 
         # embedding
@@ -114,8 +120,9 @@ def build_model_(args):
 
 
 if __name__ == '__main__':
-    img = torch.randn(12, 3, 1024, 1024).cuda()
+    img = torch.randn(2, 3, 1024, 1024).cuda()
     detr = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
-    pred_boxes, pred_classes = detr(img)
+    out = detr(img)
+    pred_classes, pred_boxes = out['pred_logits'], out['pred_boxes']
     print(pred_boxes.size())
     print(pred_classes.size())

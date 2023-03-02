@@ -151,3 +151,6 @@ def build_loss(args):
     criterion = SetCriterion(num_classes, matcher=matcher, weight_dict=weight_dict,
                              eos_coef=args.eos_coef, losses=losses)
     return criterion
+
+
+# if __name__ == '__main__':
