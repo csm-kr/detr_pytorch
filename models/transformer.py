@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
-from models.pe import get_positional_encoding
 import torch.nn.functional as F
+from models.pe import get_positional_encoding
 
 
 class MHA(nn.Module):
@@ -31,74 +31,6 @@ class MHA(nn.Module):
         att_out = torch.einsum('bhnm,bmhd->bnhd', (att, _v))               # b, n_q, h, d
         x = att_out.reshape(B, -1, C)                                      # b, n_q, h*d
 
-        # out = self.fc(att_out)                                           # b, n_q, d
-        #
-        # q = self.q(x_q).reshape(B, N_q, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        # k = self.k(x_k).reshape(B, N_kv, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        # v = self.v(x_v).reshape(B, N_kv, 1, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        #
-        # attn = (q @ k.transpose(-2, -1)) * self.scale
-        # attn = attn.softmax(dim=-1)
-        # attn = self.attn_drop(attn)
-        #
-        # x = (attn @ v).transpose(1, 2).reshape(B, N_q, C)
-
-        x = self.proj(x)
-        x = self.proj_drop(x)
-        return x
-
-
-class multihead(nn.Module):
-    def __init__(self, input_size, heads, dimension):
-        super(multihead, self).__init__()
-        self.h, self.d = heads, dimension
-        self.lq = nn.Linear(input_size, self.h * self.d)
-        self.lk = nn.Linear(input_size, self.h * self.d)
-        self.lv = nn.Linear(input_size, self.h * self.d)
-        self.fc = nn.Linear(self.h * self.d, self.d)
-
-    def forward(self, q, k, v):
-        b, n_q, n_k, h, d = q.size(0), q.size(1), k.size(1), self.h, self.d
-
-        q, k, v = self.lq(q), self.lk(k), self.lv(v)                    # b, n_*, h*d
-        _q, _k, _v = map(lambda x: x.reshape(b, -1, h, d), [q, k, v])   # b, n_*, h, d
-        qk = torch.einsum('bnhd,bmhd->bhnm', (q,k))                     # b, h, n_q, n_k
-        att = F.softmax(qk / (self.d ** .5), dim=3)                     # b, h, n_q, n_k
-        att_out = torch.einsum('bhnm,bmhd->bnhd', (att,v))              # b, n_q, h, d
-        att_out = att_out.reshape(b, -1, h*d)                           # b, n_q, h*d
-        out = self.fc(att_out)                                          # b, n_q, d
-        return out
-
-
-class MSA(nn.Module):
-    def __init__(self, dim, num_heads=8, qkv_bias=True, dropout=0.1):
-        super().__init__()
-        assert dim % num_heads == 0, 'dim should be divisible by num_heads'
-        self.num_heads = num_heads
-        head_dim = dim // num_heads
-        self.scale = head_dim ** -0.5
-
-        self.qkv = nn.Linear(dim, dim * 3, bias=qkv_bias)
-        self.attn_drop = nn.Dropout(dropout)
-        self.proj = nn.Linear(dim, dim)
-        self.proj_drop = nn.Dropout(dropout)
-        self._reset_parameters()
-
-    def _reset_parameters(self):
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
-
-    def forward(self, x):
-        B, N, C = x.shape
-        qkv = self.qkv(x).reshape(B, N, 3, self.num_heads, C // self.num_heads).permute(2, 0, 3, 1, 4)
-        q, k, v = qkv.unbind(0)  # make torchscript happy (cannot use tensor as tuple)
-
-        attn = (q @ k.transpose(-2, -1)) * self.scale
-        attn = attn.softmax(dim=-1)
-        attn = self.attn_drop(attn)
-
-        x = (attn @ v).transpose(1, 2).reshape(B, N, C)
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
@@ -131,7 +63,6 @@ class EncoderLayer(nn.Module):
     def __init__(self, d_model, d_feedforward=2048, dropout=0.1):
         super().__init__()
         self.attn = MHA(dim=d_model, attn_drop=dropout, proj_drop=dropout)
-        # self.attn = MSA(dim=d_model, dropout=dropout)
         self.mlp = MLP(in_features=d_model, hidden_features=d_feedforward, out_features=d_model, dropout=dropout)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
@@ -139,12 +70,10 @@ class EncoderLayer(nn.Module):
     def forward(self, x):
 
         # 1. Positional Encoding for q, k
-        pos = get_positional_encoding(x)
-        x_q = x_k = x + pos
-        x_v = x
+        pe = get_positional_encoding(x)
 
         # 2. Multi head self attention for encoder
-        x = self.norm1(x + self.attn(x_q, x_k, x_v))
+        x = self.norm1(x + self.attn(x + pe, x + pe, x))
         x = self.norm2(x + self.mlp(x))
         return x
 
@@ -160,41 +89,37 @@ class Encoder(nn.Module):
     def forward(self, x):
         for enc in self.encoders:
             x = enc(x)
-            # print(x)
         return x
 
 
 class DecoderLayer(nn.Module):
     def __init__(self, d_model, d_feedforward=2048, dropout=0.1):
         super().__init__()
-        self.attn_tgt = MHA(dim=d_model, attn_drop=dropout, proj_drop=dropout)
+        self.attn_t = MHA(dim=d_model, attn_drop=dropout, proj_drop=dropout)
         self.attn_x = MHA(dim=d_model, attn_drop=dropout, proj_drop=dropout)
         self.mlp = MLP(in_features=d_model, hidden_features=d_feedforward, out_features=d_model, dropout=dropout)
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
         self.norm3 = nn.LayerNorm(d_model)
 
-    def forward(self, tgt, x, query_embed):
+    def forward(self, t, x, query_embed):
         '''
-        :param tgt: [N, 100, 256]
+        :param t: [N, 100, 256] (target)
         :param x: [N, 1024, 256]
         :param query_embed: [N, 100, 256]
         :return:
         '''
+        # 1. Query Embedding
+        qe = query_embed
 
-        q_tgt = k_tqt = tgt + query_embed
-        tgt = self.norm1(tgt + self.attn_tgt(q_tgt, k_tqt, tgt))
+        # 2. Positional Encoding for q, k
+        pe = get_positional_encoding(x)
 
-        # set_x
-        pos = get_positional_encoding(x)
-        x_k = x + pos
-        x_v = x
-
-        # set_tgt
-        q_tgt = tgt + query_embed
-        tgt = self.norm2(tgt + self.attn_x(q_tgt, x_k, x_v))
-        tgt = self.norm3(tgt + self.mlp(tgt))
-        return tgt
+        # 3. attn
+        t = self.norm1(t + self.attn_t(t + qe, t + qe, t))
+        t = self.norm2(t + self.attn_x(t + qe, x + pe, x))
+        t = self.norm3(t + self.mlp(t))
+        return t
 
 
 class Decoder(nn.Module):
@@ -206,11 +131,11 @@ class Decoder(nn.Module):
             DecoderLayer(d_model, d_feedforward=2048, dropout=dropout)
             for _ in range(num_layers)])
 
-    def forward(self, tgt, x, query_embed):
+    def forward(self, t, x, query_embed):
         intermediate = []
         for dec in self.decoders:
-            tgt = dec(tgt, x, query_embed)
-            intermediate.append(self.norm(tgt))
+            t = dec(t, x, query_embed)
+            intermediate.append(self.norm(t))
 
         return torch.stack(intermediate)  # [6, B, 100, 256]
 
@@ -238,44 +163,16 @@ class Transformer(nn.Module):
         # FIXME which condition is better?
         # make target
         # tgt = torch.randn_like(query_embed)
-        tgt = torch.zeros_like(query_embed)
+        t = torch.zeros_like(query_embed)
 
         # encoder, decoder
         x = self.encoder(x)
-        tgt = self.decoder(tgt, x, query_embed)
+        t = self.decoder(t, x, query_embed)
 
-        return tgt, x
+        return t, x
 
 
 if __name__ == '__main__':
-
-    # Encoder Layer
-    # x = torch.randn([2, 1024, 256])
-    # encoder = EncoderLayer(d_model=256)
-    # out = encoder(x)
-    # print(out.size())
-
-    # Encoder
-    # x = torch.randn([2, 1024, 256])
-    # encoder = Encoder(d_model=256, num_layers=6)
-    # out = encoder(x)
-    # print(out.size())
-
-    # Decoder Layer
-    # x = torch.randn([2, 1024, 256])
-    # tgt = torch.randn([2, 100, 256])
-    # query_embed = torch.randn([2, 100, 256])
-    # decoder = DecoderLayer(d_model=256)
-    # out = decoder(tgt, x, query_embed)
-    # print(out.size())
-    #
-    # # Decoder
-    # x = torch.randn([2, 1024, 256])
-    # tgt = torch.randn([2, 100, 256])
-    # query_embed = torch.randn([2, 100, 256])
-    # decoder = Decoder(d_model=256, num_layers=6)
-    # out = decoder(tgt, x, query_embed)
-    # print(out.size())
 
     # Transformer
     x = torch.randn([2, 256, 32, 32])
