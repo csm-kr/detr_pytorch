@@ -21,7 +21,7 @@ Please refer to https://arxiv.org/abs/2005.12872
 ```
 - batch size : 36 (official - 64)
 - optimizer : Adamw
-- epoch : 300
+- epoch : 500
 - lr : 1e-4 
 - weight decay : 1e-4
 - scheduler : step LR (*0.1 at epoch 200)
