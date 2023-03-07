@@ -1,13 +1,16 @@
 # name
-name = detr_coco_aug_20230226
+name = anchor_detr_coco
 
 # data
 data_root = /home/cvmlserver7/Sungmin/data/coco/
 data_type = coco
-is_mosaic_transform_true
 
 # batch size
 batch_size = 36
+
+# epochs
+epochs = 500
+lr_drop = 400
 
 # distributed
 rank = 0
