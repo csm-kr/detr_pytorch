@@ -158,11 +158,11 @@ class Transformer(nn.Module):
 
         bs, c, h, w = x.shape                # [B, 256, 32, 32]
         x = x.flatten(2).permute(0, 2, 1)    # [B, 256, 1024] -> [B, 1024, 256]
-        query_embed = query_embed.unsqueeze(0).expand([bs] + list(query_embed.size()))
+        query_embed = query_embed.unsqueeze(0).expand([bs] + list(query_embed.size()))  # bs, 100, 256
 
         # FIXME which condition is better?
         # make target
-        # tgt = torch.randn_like(query_embed)
+        # t = torch.randn_like(query_embed)
         t = torch.zeros_like(query_embed)
 
         # encoder, decoder
