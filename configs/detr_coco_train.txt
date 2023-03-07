@@ -1,5 +1,5 @@
 # name
-name = anchor_detr_coco
+name = detr_coco
 
 # data
 data_root = /home/cvmlserver7/Sungmin/data/coco/
