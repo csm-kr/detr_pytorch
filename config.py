@@ -24,8 +24,10 @@ def get_args_parser():
     parser.add_argument('--is_mosaic_transform_true', dest='mosaic_transform', action='store_true')
 
     # * model
-    parser.add_argument('--num_classes', type=int)
+    parser.add_argument('--num_classes', type=int)  # 91
     parser.add_argument('--dec_layers', type=int, default=6)
+    parser.add_argument('--num_queries', type=int, default=100)
+    parser.add_argument('--d_model', type=int, default=256)
 
     # * loss
     parser.add_argument('--set_cost_class', default=1, type=float, help="Class coefficient in the matching cost")
@@ -39,8 +41,8 @@ def get_args_parser():
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--lr_backbone', default=1e-5, type=float)
     parser.add_argument('--weight_decay', default=1e-4, type=float)
-    parser.add_argument('--epochs', default=300, type=int)
-    parser.add_argument('--lr_drop', default=200, type=int)
+    parser.add_argument('--epochs', default=500, type=int)
+    parser.add_argument('--lr_drop', default=400, type=int)
     parser.add_argument('--clip_max_norm', default=0.1, type=float, help='gradient clipping max norm')
     parser.add_argument('--start_epoch', type=int, default=0, help='for resume')
 
@@ -48,7 +50,7 @@ def get_args_parser():
     parser.add_argument('--eval', action='store_true')
     parser.add_argument('--test_epoch', type=str, default='best')
     parser.add_argument('--conf_thres', type=float, default=0.05, help='score threshold - 0.05 for test 0.5 for demo')
-    parser.add_argument('--top_k', type=int, default=200, help='set top k for after nms')
+    parser.add_argument('--top_k', type=int, default=100, help='set top k for after nms')
 
     # * demo
     parser.add_argument('--demo_epoch', type=str, default='best')

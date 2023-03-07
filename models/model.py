@@ -77,12 +77,6 @@ class DETR(nn.Module):
         self.transformer = Transformer(d_model)
         self.input_proj = nn.Conv2d(2048, 256, kernel_size=1)
         self.class_layer = nn.Linear(d_model, num_classes + 1)
-        # self.box_layer = nn.Sequential(nn.Linear(in_features=256, out_features=256),
-        #                                nn.ReLU(inplace=True),
-        #                                nn.Linear(in_features=256, out_features=256),
-        #                                nn.ReLU(inplace=True),
-        #                                nn.Linear(in_features=256, out_features=4),
-        #                                )
         self.box_layer = BoxLayer()
 
         # embedding
@@ -112,11 +106,6 @@ class DETR(nn.Module):
     def _set_aux_loss(self, outputs_class, outputs_coord):
         return [{'pred_logits': a, 'pred_boxes': b}
                 for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
-
-
-def build_model_(args):
-    model = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
-    return model
 
 
 if __name__ == '__main__':

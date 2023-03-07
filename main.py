@@ -5,17 +5,17 @@ import visdom
 # data
 from datasets.build import build_dataloader
 # model
-from models import build_model___
+from models.build import build_model
+from models.postprocessor import PostProcess
+# loss
+from losses.build import build_loss
+
 from utils import init_for_distributed
 from log import XLLogSaver
 
 # train & test
 from train import train_one_epoch
 from test import test_and_eval
-
-# from losses.loss import build_loss
-from losses.new_loss import build_loss
-from models.postprocessor import PostProcess
 
 
 def main_worker(rank, opts):
@@ -38,13 +38,13 @@ def main_worker(rank, opts):
     train_loader, test_loader = build_dataloader(opts)
 
     # 5. ** model **
-    model = build_model___(opts)
-
-    criterion = build_loss(opts)
-    criterion = criterion.to(device)
+    model = build_model(opts)
+    model.to(device)
     postprocessors = {'bbox': PostProcess()}
 
-    model.to(device)
+    # 6. ** loss **
+    criterion = build_loss(opts)
+    criterion = criterion.to(device)
     criterion.to(device)
 
     model_without_ddp = model
@@ -76,6 +76,12 @@ def main_worker(rank, opts):
 
     # 9. lr_scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opts.lr_drop)
+
+    # only eval and
+    if opts.eval:
+        test_and_eval(opts.test_epoch, device, None, test_loader, model, criterion,
+            postprocessors, xl_log_saver, result_best, opts)
+        return
 
     for epoch in range(opts.start_epoch, opts.epochs):
         if opts.distributed:

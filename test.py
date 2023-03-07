@@ -16,20 +16,20 @@ def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocess
     model.eval()
 
     checkpoint = None
-    # if opts.is_load:
-    #     f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
-    #     device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
-    #     if isinstance(model, (torch.nn.parallel.distributed.DistributedDataParallel, torch.nn.DataParallel)):
-    #         checkpoint = torch.load(f=f,
-    #                                 map_location=device)
-    #         state_dict = checkpoint['model_state_dict']
-    #         model.load_state_dict(state_dict)
-    #     else:
-    #         checkpoint = torch.load(f=f,
-    #                                 map_location=device)
-    #         state_dict = checkpoint['model_state_dict']
-    #         state_dict = {k.replace('module.', ''): v for (k, v) in state_dict.items()}
-    #         model.load_state_dict(state_dict)
+    if is_load:
+        f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
+        device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
+        if isinstance(model, (torch.nn.parallel.distributed.DistributedDataParallel, torch.nn.DataParallel)):
+            checkpoint = torch.load(f=f,
+                                    map_location=device)
+            state_dict = checkpoint['model_state_dict']
+            model.load_state_dict(state_dict)
+        else:
+            checkpoint = torch.load(f=f,
+                                    map_location=device)
+            state_dict = checkpoint['model_state_dict']
+            state_dict = {k.replace('module.', ''): v for (k, v) in state_dict.items()}
+            model.load_state_dict(state_dict)
 
     tic = time.time()
     sum_loss = []
