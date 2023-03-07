@@ -20,29 +20,30 @@ from test import test_and_eval
 
 def main_worker(rank, opts):
 
-    # 1. ** argparser **
+    # 1. argparser
     print(opts)
 
     if opts.distributed:
         init_for_distributed(rank, opts)
 
-    # 2. ** device **
+    # 2. device
     device = torch.device('cuda:{}'.format(int(opts.gpu_ids[opts.rank])))
 
-    # 3. ** visdom **
+    # 3. visdom
     if opts.eval:
         vis = None
     else:
         vis = visdom.Visdom(port=opts.visdom_port)
 
+    # 4. data
     train_loader, test_loader = build_dataloader(opts)
 
-    # 5. ** model **
+    # 5. model
     model = build_model(opts)
     model.to(device)
     postprocessors = {'bbox': PostProcess()}
 
-    # 6. ** loss **
+    # 6. loss
     criterion = build_loss(opts)
     criterion = criterion.to(device)
     criterion.to(device)
@@ -52,7 +53,7 @@ def main_worker(rank, opts):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[int(opts.gpu_ids[opts.rank])])
         model_without_ddp = model.module
 
-    # 6. optimizer
+    # 7. optimizer
     param_dicts = [
         {"params": [p for n, p in model_without_ddp.named_parameters() if "backbone" not in n and p.requires_grad]},
         {
@@ -64,23 +65,23 @@ def main_worker(rank, opts):
                                   lr=opts.lr,
                                   weight_decay=opts.weight_decay)
 
-    # 7. logger
+    # 8. logger
     xl_log_saver = None
     if opts.rank == 0:
         xl_log_saver = XLLogSaver(xl_folder_name=os.path.join(opts.log_dir, opts.name),
                                   xl_file_name=opts.name,
                                   tabs=('epoch', 'mAP', 'val_loss'))
 
-    # 8. set best results
+    # 9. set best results
     result_best = {'epoch': 0, 'mAP': 0., 'val_loss': 0.}
 
-    # 9. lr_scheduler
+    # 10. lr_scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opts.lr_drop)
 
-    # only eval and
+    # only eval
     if opts.eval:
-        test_and_eval(opts.test_epoch, device, None, test_loader, model, criterion,
-            postprocessors, xl_log_saver, result_best, opts)
+        test_and_eval(opts.test_epoch, device, vis, test_loader, model, criterion, postprocessors,
+                      opts=opts, is_load=True)
         return
 
     for epoch in range(opts.start_epoch, opts.epochs):
