@@ -156,9 +156,9 @@ class Transformer(nn.Module):
 
     def forward(self, x, query_embed):
 
-        bs, c, h, w = x.shape                # [B, 256, 32, 32]
-        x = x.flatten(2).permute(0, 2, 1)    # [B, 256, 1024] -> [B, 1024, 256]
-        query_embed = query_embed.unsqueeze(0).expand([bs] + list(query_embed.size()))  # bs, 100, 256
+        bs, c, h, w = x.shape                          # [B, 256, 32, 32]
+        x = x.flatten(2).permute(0, 2, 1)              # [B, 256, 1024] -> [B, 1024, 256]
+        query_embed = query_embed.repeat(bs, 1, 1)     # [100, 256] -> [B, 100, 256]
 
         # FIXME which condition is better?
         # make target
