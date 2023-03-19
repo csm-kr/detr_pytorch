@@ -131,12 +131,13 @@ def setup_for_distributed(is_master):
 
 
 def resume(opts, model, optimizer, scheduler):
-    if opts.start_epoch != 0:
+    if opts.resume:
         # take pth at epoch - 1
-        f = os.path.join(opts.save_dir, opts.name, opts.name + '.{}.pth.tar'.format(opts.start_epoch - 1))
+        f = os.path.join(opts.save_dir, opts.name, opts.name + 'train.best.pth.tar')
         device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
         checkpoint = torch.load(f=f,
                                 map_location=device)
+        opts.start_epoch = checkpoint['epoch'] - 1
         model.load_state_dict(checkpoint['model_state_dict'])                              # load model state dict
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])                      # load optim state dict
         scheduler.load_state_dict(checkpoint['scheduler_state_dict'])                      # load sched state dict

@@ -1,0 +1,17 @@
+# name
+name = detr_coco
+
+# data
+# data_root = /home/cvmlserver7/Sungmin/data/coco/
+data_root = D:\data\coco
+data_type = coco
+
+# batch size
+batch_size = 2
+
+# test
+eval
+
+# distributed
+rank = 0
+gpu_ids = [0]

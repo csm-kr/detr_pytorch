@@ -7,7 +7,9 @@ from evaluation.coco_eval import CocoEvaluator
 
 
 @torch.no_grad()
-def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocessors, xl_log_saver=None, result_best=None, opts=None, is_load=False):
+def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocessors,
+                  optimizer=None, scheduler=None,
+                  xl_log_saver=None, result_best=None, opts=None, is_load=False):
 
     iou_types = tuple(k for k in ('segm', 'bbox') if k in postprocessors.keys())  # 'bbox'
     # coco_evaluator = CocoEvaluator(base_ds, iou_types)
@@ -15,7 +17,6 @@ def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocess
     print('Validation of epoch [{}]'.format(epoch))
     model.eval()
 
-    checkpoint = None
     if is_load:
         f = os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.{}.pth.tar'.format(epoch))
         device = torch.device('cuda:{}'.format(opts.gpu_ids[opts.rank]))
@@ -106,7 +107,15 @@ def test_and_eval(epoch, device, vis, test_loader, model, criterion, postprocess
                 print("update best model")
                 result_best['epoch'] = epoch
                 result_best['mAP'] = mAP
-                if checkpoint is None:
-                    checkpoint = {'epoch': epoch,
-                                  'model_state_dict': model.state_dict()}
-                    torch.save(checkpoint, os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.best.pth.tar'))
+
+                # best.pth.tar - for demo
+                checkpoint = {'epoch': epoch,
+                              'model_state_dict': model.state_dict()}
+                torch.save(checkpoint, os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.best.pth.tar'))
+
+                # train.best.pth.tar - for resume
+                checkpoint = {'epoch': epoch,
+                              'optimizer_state_dict': optimizer.state_dict(),
+                              'scheduler_state_dict': scheduler.state_dict(),
+                              'model_state_dict': model.state_dict()}
+                torch.save(checkpoint, os.path.join(opts.log_dir, opts.name, 'saves', opts.name + '.train.best.pth.tar'))

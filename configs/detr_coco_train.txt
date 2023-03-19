@@ -9,8 +9,6 @@ data_type = coco
 batch_size = 36
 
 # epochs
-epochs = 500
-lr_drop = 400
 
 # distributed
 rank = 0

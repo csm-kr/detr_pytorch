@@ -10,6 +10,9 @@ from tqdm import tqdm
 def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module,
                     train_loader: Iterable, optimizer: torch.optim.Optimizer,
                     device: torch.device, epoch: int, max_norm: float = 0, opts=None, vis=None):
+    # 1. epoch,
+    #
+
     model.train()
     criterion.train()
     tic = time.time()

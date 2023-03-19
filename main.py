@@ -11,6 +11,7 @@ from models.postprocessor import PostProcess
 from losses.build import build_loss
 
 from utils import init_for_distributed
+from utils.util import resume
 from log import XLLogSaver
 
 # train & test
@@ -78,6 +79,10 @@ def main_worker(rank, opts):
     # 10. lr_scheduler
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, opts.lr_drop)
 
+    # resume
+    if opts.resume:
+        model, optimizer, scheduler = resume(opts, model, optimizer, lr_scheduler)
+
     # only eval
     if opts.eval:
         test_and_eval(opts.test_epoch, device, vis, test_loader, model, criterion, postprocessors,
@@ -98,7 +103,9 @@ def main_worker(rank, opts):
         # 12. test
         test_and_eval(
             epoch, device, vis, test_loader, model, criterion,
-            postprocessors, xl_log_saver, result_best, opts)
+            postprocessors,
+            optimizer, lr_scheduler,
+            xl_log_saver, result_best, opts)
 
 
 if __name__ == '__main__':
