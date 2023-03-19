@@ -69,8 +69,9 @@ Eval Time : 66.7581
 1. download .pth.tar file from 
 https://drive.google.com/file/d/1BfgWrkkX2v_d3sbLtIrguZTtIy-MRA5K/view?usp=share_link
 
-2. make .logs file 
-make ./.logs/detr_coco/saves and put it in .pth.tar file
+2. make ./.logs/detr_coco/saves and put it in .pth.tar file
 
-3. run 
+3. run main for eval
+```
 python main.py --config ./configs/detr_coco_test.txt
+```
