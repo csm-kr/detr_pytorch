@@ -36,6 +36,7 @@ Please refer to https://arxiv.org/abs/2005.12872
 |papers         | COCOtrain2017          |  COCO val2017(minival) | 800 ~ 1333   | 42.0 (500 epoch) |
 |this repo      | COCOtrain2017          |  COCO val2017(minival) | 1024 x 1024  | 41.9 (500 epoch) |
 
+- result of RTX 3090
 ```
 Accumulating evaluation results...
 DONE (t=6.23s).
@@ -55,6 +56,29 @@ IoU metric: bbox
 mAP :  0.4190736759071826
 mean Loss :  8.931809981664022
 Eval Time : 66.7581
+```
+
+- result of gtx 1080 ti
+```
+Accumulating evaluation results...
+DONE (t=6.01s).
+IoU metric: bbox
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.419
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.615
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.442
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.197
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.458
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.618
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.337
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.538
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.579
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.302
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.642
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.817
+mAP :  0.41899994889138625
+mean Loss :  7.4997836683601475
+Eval Time : 438.7726
+
 ```
 
 - qualitative reusults
