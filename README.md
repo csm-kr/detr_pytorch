@@ -64,3 +64,13 @@ Eval Time : 66.7581
 - attention results
 
 ![attention](https://user-images.githubusercontent.com/18729104/223943742-93f7a8d2-4a82-4cf5-92a5-bc4df66a9a72.JPG)
+
+- test as pretrained model
+1. download .pth.tar file from 
+https://drive.google.com/file/d/1BfgWrkkX2v_d3sbLtIrguZTtIy-MRA5K/view?usp=share_link
+
+2. make .logs file 
+make ./.logs/detr_coco/saves and put it in .pth.tar file
+
+3. run 
+python main.py --config ./configs/detr_coco_test.txt
