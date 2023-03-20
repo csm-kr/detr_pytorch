@@ -36,7 +36,7 @@ Please refer to https://arxiv.org/abs/2005.12872
 |papers         | COCOtrain2017          |  COCO val2017(minival) | 800 ~ 1333   | 42.0 (500 epoch) |
 |this repo      | COCOtrain2017          |  COCO val2017(minival) | 1024 x 1024  | 41.9 (500 epoch) |
 
-- result of RTX 3090
+- result of RTX 3090 (batch 36)
 ```
 Accumulating evaluation results...
 DONE (t=6.23s).
@@ -58,7 +58,7 @@ mean Loss :  8.931809981664022
 Eval Time : 66.7581
 ```
 
-- result of gtx 1080 ti
+- result of gtx 1080 ti (barch 2)
 ```
 Accumulating evaluation results...
 DONE (t=6.01s).
