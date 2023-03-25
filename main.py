@@ -82,6 +82,8 @@ def main_worker(rank, opts):
     # resume
     if opts.resume:
         model, optimizer, scheduler = resume(opts, model, optimizer, lr_scheduler)
+    else:
+        opts.start_epoch = 0
 
     # only eval
     if opts.eval:

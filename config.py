@@ -44,7 +44,7 @@ def get_args_parser():
     parser.add_argument('--epochs', default=500, type=int)
     parser.add_argument('--lr_drop', default=400, type=int)
     parser.add_argument('--clip_max_norm', default=0.1, type=float, help='gradient clipping max norm')
-    parser.add_argument('--start_epoch', type=int, default=400, help='for resume')
+    parser.add_argument('--start_epoch', type=int, default=0, help='for resume')
     parser.add_argument('--is_resume', dest='resume', action='store_true')
 
     # * test
