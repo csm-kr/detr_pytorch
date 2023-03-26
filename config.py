@@ -33,13 +33,11 @@ def get_args_parser():
     parser.add_argument('--set_cost_class', default=1, type=float, help="Class coefficient in the matching cost")
     parser.add_argument('--set_cost_bbox', default=5, type=float, help="L1 box coefficient in the matching cost")
     parser.add_argument('--set_cost_giou', default=2, type=float, help="giou box coefficient in the matching cost")
-    parser.add_argument('--bbox_loss_coef', default=5, type=float)
-    parser.add_argument('--giou_loss_coef', default=2, type=float)
     parser.add_argument('--eos_coef', default=0.1, type=float, help="Relative classification weight of the no-object class")
 
     # * train
-    parser.add_argument('--lr', default=1e-5, type=float)
-    parser.add_argument('--lr_backbone', default=1e-6, type=float)
+    parser.add_argument('--lr', default=1e-4, type=float)
+    parser.add_argument('--lr_backbone', default=1e-5, type=float)
     parser.add_argument('--weight_decay', default=1e-4, type=float)
     parser.add_argument('--epochs', default=500, type=int)
     parser.add_argument('--lr_drop', default=400, type=int)

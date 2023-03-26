@@ -2,7 +2,7 @@ from losses.loss import HungarianLoss
 
 
 def build_loss(opts):
-    weight_dict = {'loss_ce': 1, 'loss_bbox': 5, 'loss_giou': 2}
+    weight_dict = {'loss_ce': opts.set_cost_class, 'loss_bbox': opts.set_cost_bbox, 'loss_giou': opts.set_cost_giou}
     aux_weight_dict = {}
     for i in range(opts.dec_layers - 1):
         aux_weight_dict.update({k + f'_{i}': v for k, v in weight_dict.items()})
