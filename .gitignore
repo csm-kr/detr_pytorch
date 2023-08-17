@@ -25,6 +25,7 @@ results/
 
 # demo
 detection_results/
+demo_results
 
 # pycharm IDE
 __pycache__/
