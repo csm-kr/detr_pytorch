@@ -30,7 +30,7 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
     total_time = 0
 
     # 2. load .pth
-    checkpoint = torch.load(f=os.path.join('.logs', 'detr_coco_20230219', 'saves', 'detr_coco_20230219' + '.best.pth.tar'),
+    checkpoint = torch.load(f=os.path.join('.logs', 'detr_coco', 'saves', 'detr_coco' + '.best.pth.tar'),
                             map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
@@ -49,9 +49,19 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
 
         keep = pred_scores[0] > 0.7
 
-        from utils.visualize_boxes import visualize_boxes_labels
-        visualize_boxes_labels(demo_image.squeeze(0), pred_boxes[0][keep], pred_labels[0][keep],
-                               data_type='coco', num_labels=91, scores=pred_scores[0][keep])
+        from utils.visualize_boxes import visualize_boxes_labels, visualize_cv2
+        # visualize_boxes_labels(demo_image.squeeze(0), pred_boxes[0][keep], pred_labels[0][keep],
+        #                        data_type='coco', num_labels=91, scores=pred_scores[0][keep])
+        
+        visualize_cv2(image=demo_image.squeeze(0),
+                      boxes=pred_boxes[0][keep],
+                      labels=pred_labels[0][keep],
+                      data_type='coco',
+                      num_labels=91,
+                      scores=pred_scores[0][keep],
+                      original_h=h,
+                      original_w=w,
+                      name=os.path.basename(img_path))
 
     #     # pred_boxes, pred_labels, pred_scores = model.module.predict(pred,
     #     #                                                             model.module.anchor.center_anchors,
@@ -90,7 +100,7 @@ def demo_worker():
     model = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
     model = torch.nn.DataParallel(module=model, device_ids=[0])
 
-    demo(demo_root='D:\data\coco\\val2017',
+    demo(demo_root = '/usr/src/data/voc/VOCtest_06-Nov-2007/VOCdevkit/VOC2007/JPEGImages',
          device=device,
          model=model)
 
