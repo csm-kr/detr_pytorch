@@ -6,6 +6,7 @@ from PIL import Image
 from models.model import DETR
 from torchvision import transforms as tfs
 from models.postprocessor import PostProcess
+from utils.download_url_pretrained import download_pretrained_model
 
 
 def demo_image_transforms(demo_image):
@@ -29,9 +30,14 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
     demo_image_list = glob.glob(os.path.join(demo_root, '*' + '.jpg'))
     total_time = 0
 
-    # 2. load .pth
-    checkpoint = torch.load(f=os.path.join('.logs', 'detr_coco_20230219', 'saves', 'detr_coco_20230219' + '.best.pth.tar'),
+    # 2. download 
+    pth_name = "detr_coco_best"
+    download_pretrained_model(pth_name, '1BfgWrkkX2v_d3sbLtIrguZTtIy-MRA5K')
+
+    # 3. load .pth
+    checkpoint = torch.load(f=os.path.join(torch.hub.get_dir(), 'checkpoints', pth_name),
                             map_location=device)
+    
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
@@ -90,7 +96,7 @@ def demo_worker():
     model = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
     model = torch.nn.DataParallel(module=model, device_ids=[0])
 
-    demo(demo_root='D:\data\coco\\val2017',
+    demo(demo_root='/usr/src/data/coco/val2017',
          device=device,
          model=model)
 
