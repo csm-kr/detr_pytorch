@@ -55,9 +55,19 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
 
         keep = pred_scores[0] > 0.7
 
-        from utils.visualize_boxes import visualize_boxes_labels
-        visualize_boxes_labels(demo_image.squeeze(0), pred_boxes[0][keep], pred_labels[0][keep],
-                               data_type='coco', num_labels=91, scores=pred_scores[0][keep])
+        from utils.visualize_boxes import visualize_boxes_labels, visualize_cv2
+        # visualize_boxes_labels(demo_image.squeeze(0), pred_boxes[0][keep], pred_labels[0][keep],
+        #                        data_type='coco', num_labels=91, scores=pred_scores[0][keep])
+        
+        visualize_cv2(image=demo_image.squeeze(0),
+                      boxes=pred_boxes[0][keep],
+                      labels=pred_labels[0][keep],
+                      data_type='coco',
+                      num_labels=91,
+                      scores=pred_scores[0][keep],
+                      original_h=h,
+                      original_w=w,
+                      name=os.path.basename(img_path))
 
     #     # pred_boxes, pred_labels, pred_scores = model.module.predict(pred,
     #     #                                                             model.module.anchor.center_anchors,
@@ -99,7 +109,6 @@ def demo_worker():
     demo(demo_root='/usr/src/data/coco/val2017',
          device=device,
          model=model)
-
 
 if __name__ == '__main__':
     demo_worker()
