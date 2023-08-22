@@ -7,7 +7,7 @@ from models.model import DETR
 from torchvision import transforms as tfs
 from models.postprocessor import PostProcess
 from utils.download_url_pretrained import download_pretrained_model
-
+from utils.visualize_boxes import visualize_boxes_labels, visualize_cv2
 
 def demo_image_transforms(demo_image):
 
@@ -22,24 +22,25 @@ def demo_image_transforms(demo_image):
 
 
 @ torch.no_grad()
-def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
+def demo(demo_root, device=None, model=None):
 
+    # 1. set post processors
     postprocessors = {'bbox': PostProcess()}
 
-    # 1. make tensors
+    # 2. make list of images
     demo_image_list = glob.glob(os.path.join(demo_root, '*' + '.jpg'))
     total_time = 0
 
-    # 2. download 
+    # 2. download and .pth file
     pth_name = "detr_coco_best"
     download_pretrained_model(pth_name, '1BfgWrkkX2v_d3sbLtIrguZTtIy-MRA5K')
-
-    # 3. load .pth
     checkpoint = torch.load(f=os.path.join(torch.hub.get_dir(), 'checkpoints', pth_name),
                             map_location=device)
     
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
+
+    tic = time.time()
 
     for idx, img_path in enumerate(demo_image_list):
 
@@ -55,10 +56,6 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
 
         keep = pred_scores[0] > 0.7
 
-        from utils.visualize_boxes import visualize_boxes_labels, visualize_cv2
-        # visualize_boxes_labels(demo_image.squeeze(0), pred_boxes[0][keep], pred_labels[0][keep],
-        #                        data_type='coco', num_labels=91, scores=pred_scores[0][keep])
-        
         visualize_cv2(image=demo_image.squeeze(0),
                       boxes=pred_boxes[0][keep],
                       labels=pred_labels[0][keep],
@@ -69,30 +66,15 @@ def demo(demo_root='D:\data\coco\\val2017', device=None, model=None):
                       original_w=w,
                       name=os.path.basename(img_path))
 
-    #     # pred_boxes, pred_labels, pred_scores = model.module.predict(pred,
-    #     #                                                             model.module.anchor.center_anchors,
-    #     #                                                             opts)
-    #     # toc = time.time()
-    #     #
-    #     # if opts.demo_save:
-    #     #     # 7. visualize results of object detection
-    #     #     im_show = visualize_detection_result(demo_image_pil, pred_boxes, pred_labels, pred_scores)
-    #     #
-    #     #     # 8. save files
-    #     #     demo_result_path = os.path.join(opts.demo_root, 'detection_results')
-    #     #     os.makedirs(demo_result_path, exist_ok=True)
-    #     #
-    #     #     # 9. rescaling from 0 ~ 1 image to 0 ~ 255 image
-    #     #     im_show = cv2.convertScaleAbs(im_show, alpha=(255.0))
-    #     #     cv2.imwrite(os.path.join(demo_result_path, os.path.basename(img_path)), im_show)
-    #
-    #     inference_time = toc - tic
-    #     total_time += inference_time
-    #
-    #     if idx % 100 == 0 or idx == len(demo_image_list) - 1:
-    #         # ------------------- check fps -------------------
-    #         print('Step: [{}/{}]'.format(idx, len(demo_image_list)))
-    #         print("fps : {:.4f}".format((idx + 1) / total_time))
+        toc = time.time()
+    
+        inference_time = toc - tic
+        total_time += inference_time
+    
+        if idx % 100 == 0 or idx == len(demo_image_list) - 1:
+            # ------------------- check fps -------------------
+            print('Step: [{}/{}]'.format(idx, len(demo_image_list)))
+            print("fps : {:.4f}".format((idx + 1) / total_time))
 
     print("complete detection...!")
     return
@@ -106,7 +88,7 @@ def demo_worker():
     model = DETR(num_classes=91, num_queries=100, d_model=256).cuda()
     model = torch.nn.DataParallel(module=model, device_ids=[0])
 
-    demo(demo_root='/usr/src/data/coco/val2017',
+    demo(demo_root='/usr/src/data/cvml',
          device=device,
          model=model)
 
