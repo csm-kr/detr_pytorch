@@ -194,7 +194,7 @@ if __name__ == '__main__':
         normalize
     ])
 
-    coco_dataset = COCO_Dataset(data_root="D:/data/coco",
+    coco_dataset = COCO_Dataset(data_root="/usr/src/data/coco",
                                 split='train',
                                 download=True,
                                 transform=transform_train,
