@@ -5,6 +5,10 @@ from PIL import Image
 from pycocotools.coco import COCO
 from torch.utils.data import DataLoader, Dataset
 
+import os
+import sys
+sys.path.append(os.path.abspath('/workspace/detr_pytorch'))
+
 # from utils.util import xy_to_cxcy
 from util.box_ops import box_xyxy_to_cxcywh
 from utils.download_dataset import download_coco
@@ -192,7 +196,7 @@ if __name__ == '__main__':
         normalize
     ])
 
-    coco_dataset = COCO_Dataset(data_root=coco_root_data,
+    coco_dataset = COCO_Dataset(data_root="/usr/src/data/coco",
                                 split='train',
                                 download=True,
                                 transform=transform_train,
