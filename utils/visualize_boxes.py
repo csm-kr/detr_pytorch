@@ -141,9 +141,9 @@ def visualize_boxes_labels(image: torch.Tensor,
     image_vis *= std
     image_vis += mean
     image_vis = np.clip(image_vis, 0, 1)
-
+    print("image_vis", image_vis)
     # resize
-    image_vis = cv2.resize(image_vis, (original_w, original_h))
+    # image_vis = cv2.resize(image_vis, (original_w, original_h))
 
     plt.figure('image_w_boxes')
     plt.imshow(image_vis)
@@ -211,4 +211,4 @@ def visualize_boxes_labels(image: torch.Tensor,
         print('save')
         os.makedirs('./demo_results', exist_ok=True)
         plt.savefig(f'./demo_results/detection_results_of_{name}')
-    # plt.show()
+    plt.show()

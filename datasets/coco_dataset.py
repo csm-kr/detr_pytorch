@@ -98,7 +98,7 @@ class COCO_Dataset(Dataset):
 
         if self.visualization:
             from utils.visualize_boxes import visualize_boxes_labels
-            visualize_boxes_labels(image, boxes, labels, data_type='coco', num_labels=91)
+            visualize_boxes_labels(image, boxes, labels, data_type='coco', num_labels=91, original_w=1024, original_h=1024)
 
         if self.boxes_coord == 'cxywh':
             boxes = box_xyxy_to_cxcywh(boxes)
@@ -161,6 +161,8 @@ class COCO_Dataset(Dataset):
 
 if __name__ == '__main__':
 
+    coco_root_data = '/usr/src/data/coco'
+
     import datasets.transforms_ as T
     device = torch.device('cuda:0')
 
@@ -190,7 +192,7 @@ if __name__ == '__main__':
         normalize
     ])
 
-    coco_dataset = COCO_Dataset(data_root="D:/data/coco",
+    coco_dataset = COCO_Dataset(data_root=coco_root_data,
                                 split='train',
                                 download=True,
                                 transform=transform_train,
