@@ -14,6 +14,7 @@ from util.box_ops import box_xyxy_to_cxcywh
 from utils.download_dataset import download_coco
 from datasets.mosaic_transform import load_mosaic
 
+from utils.visualize_boxes import visualize_dataset
 
 # * COCO_Dataset
 class COCO_Dataset(Dataset):
@@ -76,14 +77,15 @@ class COCO_Dataset(Dataset):
         anno = self._load_anno(image_id)
         boxes, labels = self.parse_coco(anno)
 
-        w, h = image.size
-        boxes[:, 0::2].clamp_(min=0, max=w)
-        boxes[:, 1::2].clamp_(min=0, max=h)
+        orig_w, orig_h = image.size
+        boxes[:, 0::2].clamp_(min=0, max=orig_w)
+        boxes[:, 1::2].clamp_(min=0, max=orig_h)
 
         info = {}
         info["image_id"] = torch.tensor([image_id])
-        info["orig_size"] = torch.as_tensor([int(h), int(w)])
+        info["orig_size"] = torch.as_tensor([int(orig_h), int(orig_w)])
 
+        # --------------------------- for mosaic transform ---------------------------
         if self.mosaic_transform:
             if random.random() > 0.5:
                 # load mosaic img
@@ -100,9 +102,11 @@ class COCO_Dataset(Dataset):
         if self.transform is not None:
             image, boxes, labels = self.transform(image, boxes, labels)
 
+        # --------------------------- for visualization ---------------------------
         if self.visualization:
-            from utils.visualize_boxes import visualize_boxes_labels
-            visualize_boxes_labels(image, boxes, labels, data_type='coco', num_labels=91, original_w=1024, original_h=1024)
+   
+            visualize_dataset(image, boxes, labels, lib_type='cv2', data_type='coco', num_labels=91)
+            # visualize_boxes_labels(image, boxes, labels, data_type='coco', num_labels=91, original_w=1024, original_h=1024)
 
         if self.boxes_coord == 'cxywh':
             boxes = box_xyxy_to_cxcywh(boxes)
@@ -200,7 +204,7 @@ if __name__ == '__main__':
                                 split='train',
                                 download=True,
                                 transform=transform_train,
-                                mosaic_transform=True,
+                                mosaic_transform=False,
                                 boxes_coord='cxywh',
                                 visualization=True,)
 
