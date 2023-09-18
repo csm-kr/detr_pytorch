@@ -3,7 +3,9 @@ import torch
 import random
 from PIL import Image
 from pycocotools.coco import COCO
+from pycocotools import mask as coco_mask
 from torch.utils.data import DataLoader, Dataset
+
 
 import os
 import sys
@@ -61,7 +63,7 @@ class COCO_Dataset(Dataset):
 
         self.coco = COCO(os.path.join(self.data_root, 'annotations', 'instances_' + self.set_name + '.json'))
         self.ids = list(sorted(self.coco.imgToAnns.keys()))
-
+        self.coco.showAnns
     def _load_image(self, id):
         path = self.coco.loadImgs(id)[0]["file_name"]
         return Image.open(os.path.join(self.data_root, self.set_name, path)).convert("RGB")
@@ -75,7 +77,9 @@ class COCO_Dataset(Dataset):
         image_id = self.ids[index]
         image = self._load_image(image_id)
         anno = self._load_anno(image_id)
-        boxes, labels = self.parse_coco(anno)
+
+        w, h = image.size
+        boxes, labels = self.parse_coco(anno, 'segm', h, w)
 
         orig_w, orig_h = image.size
         boxes[:, 0::2].clamp_(min=0, max=orig_w)
@@ -105,7 +109,8 @@ class COCO_Dataset(Dataset):
         # --------------------------- for visualization ---------------------------
         if self.visualization:
    
-            visualize_dataset(image, boxes, labels, lib_type='cv2', data_type='coco', num_labels=91)
+            visualize_dataset(image, boxes, labels, lib_type='plt', data_type='coco', num_labels=91)
+            # visualize_dataset(image, boxes, labels, lib_type='cv2', data_type='coco', num_labels=91)
             # visualize_boxes_labels(image, boxes, labels, data_type='coco', num_labels=91, original_w=1024, original_h=1024)
 
         if self.boxes_coord == 'cxywh':
@@ -115,9 +120,35 @@ class COCO_Dataset(Dataset):
             return image, boxes, labels, info
         return image, boxes, labels
 
-    def parse_coco(self, anno, type='bbox', ):
+    def parse_coco(self, anno, type='bbox', height=None, width=None):
         if type == 'segm':
-            return -1
+
+            assert height is not None and width is not None, 'height, width must be not None!'
+
+            masks = []
+
+            polygons = []
+            labels = []
+
+            for idx, anno_dict in enumerate(anno):
+
+                polygons.extend(anno_dict['segmentation'])
+                labels.append(anno_dict['category_id'])
+
+            rles = coco_mask.frPyObjects(polygons, height, width)
+            mask = coco_mask.decode(rles)
+            if len(mask.shape) < 3:
+                mask = mask[..., None]
+            mask = torch.as_tensor(mask, dtype=torch.uint8)
+            mask = mask.any(dim=2)
+            masks.append(mask)
+
+            if masks:
+                masks = torch.stack(masks, dim=0)
+            else:
+                masks = torch.zeros((0, height, width), dtype=torch.uint8)
+            return masks, labels
+        
 
         elif type == 'bbox':
             boxes = []

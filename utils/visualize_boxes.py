@@ -47,7 +47,7 @@ def visualize_dataset(image: torch.Tensor,
     image_vis += mean
     image_vis = np.clip(image_vis, 0, 1)
 
-    # 4. set boxes coordinates
+    # 4. scale the coordinates of boxes 
     h, w = image.size()[1:]
     boxes[:, 0::2] *= w
     boxes[:, 1::2] *= h
@@ -55,12 +55,15 @@ def visualize_dataset(image: torch.Tensor,
     if lib_type == 'cv2':
         show_det_cv2(image_vis, boxes, labels)
 
+    elif lib_type == 'plt':
+        show_det_plt(image_vis, boxes, labels)
+
     return 
 
 
 def show_det_cv2(image_vis, boxes, labels, ):
     """
-    img : np.ndarray, float32
+    image_vis : np.ndarray, float32
     """
 
     # for cv2 convert color rgb2bgr
@@ -118,7 +121,7 @@ def show_det_cv2(image_vis, boxes, labels, ):
 
     cv2.imshow('result', image_vis)
     cv2.waitKey(0)
-    
+
     # os.makedirs('./vis_training', exist_ok=True)
 
     # cv2 imwrite 는 0~255 int 로 변경 되어서 저장
@@ -129,7 +132,35 @@ def show_det_cv2(image_vis, boxes, labels, ):
     return
 
 
-def show_det_plt():
+def show_det_plt(image_vis, boxes, labels,):
+
+    plt.figure('showt_image_with_boxes')
+    plt.imshow(image_vis)
+
+    # show boxes
+    for i, box in enumerate(boxes):
+
+        # the coord of boxes is x1y1x2y2 (range : 0 ~ 1)
+        x1, y1, x2, y2 = box
+
+        # * 91 label
+        plt.text(x=x1,
+                    y=y1,
+                    s="detection",
+                    fontsize=15,
+                    bbox=dict(facecolor=[0, 0, 0],
+                            alpha=0.5))
+
+        # box
+        plt.gca().add_patch(Rectangle(xy=(x1, y1),
+                                      width=x2 - x1,
+                                      height=y2 - y1,
+                                      linewidth=2,
+                                      edgecolor=[1., 1., 1.],
+                                      facecolor='none'))
+    plt.axis('off')
+    plt.show()
+
     return
     
 
